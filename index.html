@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Anillas: Fase 1</title>
+    <meta name="description" content="Entrenamiento de Cimentación Anatómica en Anillas">
+    
+    <!-- PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#1a1a1a">
+    <link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjoiQW5pbGxhcyBGYXNlIDEiLCJzaG9ydF9uYW1lIjoiQW5pbGxhcyIs" />
+
+    <!-- React & Tailwind -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        body { 
+            background-color: #121212; 
+            color: #e0e0e0; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #1a1a1a; }
+        ::-webkit-scrollbar-thumb { background: #d97706; border-radius: 4px; }
+        
+        .timer-progress {
+            transition: width 1s linear;
+        }
+        .card-enter {
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- Icons (Inline SVGs to avoid dependency errors) ---
+        const Icon = ({ size = 24, color = "currentColor", children, ...props }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+                {children}
+            </svg>
+        );
+
+        const Clock = (props) => <Icon {...props}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></Icon>;
+        const Info = (props) => <Icon {...props}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></Icon>;
+        const CheckCircle = (props) => <Icon {...props}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></Icon>;
+        const Play = (props) => <Icon {...props}><polygon points="5 3 19 12 5 21 5 3"/></Icon>;
+        const Pause = (props) => <Icon {...props}><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></Icon>;
+        const RotateCcw = (props) => <Icon {...props}><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></Icon>;
+        const Award = (props) => <Icon {...props}><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></Icon>;
+        const ChevronUp = (props) => <Icon {...props}><polyline points="18 15 12 9 6 15"/></Icon>;
+        const ChevronDown = (props) => <Icon {...props}><polyline points="6 9 12 15 18 9"/></Icon>;
+
+        // --- Data Structure ---
+        const ROUTINE = {
+            title: "Fase 1: Cimentación Anatómica",
+            schedule: "Mar, Jue, Sáb",
+            sections: [
+                {
+                    id: "warmup",
+                    title: "Paso 1: El Calentamiento",
+                    subtitle: "10 Minutos • Movilidad",
+                    color: "bg-blue-900",
+                    items: [
+                        { name: "Rotaciones Articulares", desc: "Muñecas, hombros y cuello.", duration: "2 min" },
+                        { name: "Activación", desc: "Trote suave o Jumping Jacks.", duration: "3 min" },
+                        { name: "Preparación Específica", desc: "1 serie suave de remos y flexiones.", duration: "5 min" }
+                    ]
+                },
+                {
+                    id: "skill",
+                    title: "Paso 2: El Aperitivo (Habilidad)",
+                    subtitle: "Técnica Pura",
+                    color: "bg-emerald-900",
+                    exercises: [
+                        {
+                            id: "support",
+                            name: "Soporte en Anillas (RTO)",
+                            sets: 3,
+                            reps: "20-30 seg",
+                            rest: 90,
+                            notes: "Brazos rectos, nudillos hacia fuera, hombros abajo.",
+                            why: "Estabilización y salud escapular."
+                        }
+                    ]
+                },
+                {
+                    id: "strengthA",
+                    title: "Paso 3: Plato Fuerte (Superserie A)",
+                    subtitle: "Fuerza Vertical",
+                    color: "bg-amber-900",
+                    isSuperset: true,
+                    exercises: [
+                        {
+                            id: "a1",
+                            name: "A1: Dominadas Pronas",
+                            sets: 4,
+                            reps: "6-10",
+                            rest: 120,
+                            equipment: "Barra",
+                            notes: "Retracción escapular antes de subir.",
+                            why: "Fuerza base y salud de hombros."
+                        },
+                        {
+                            id: "a2",
+                            name: "A2: Flexiones en Anillas",
+                            sets: 4,
+                            reps: "10-15",
+                            rest: 120,
+                            equipment: "Anillas",
+                            notes: "Junta las anillas al final del movimiento.",
+                            why: "Estabilidad y trabajo pectoral intenso."
+                        }
+                    ]
+                },
+                {
+                    id: "strengthB",
+                    title: "Paso 4: Segundo Plato (Superserie B)",
+                    subtitle: "Fuerza Horizontal",
+                    color: "bg-orange-900",
+                    isSuperset: true,
+                    exercises: [
+                        {
+                            id: "b1",
+                            name: "B1: Remo en Anillas",
+                            sets: 3,
+                            reps: "10-12",
+                            rest: 90,
+                            equipment: "Anillas",
+                            notes: "Cuerpo recto, toca el pecho con las anillas.",
+                            why: "Postura y romboides."
+                        },
+                        {
+                            id: "b2",
+                            name: "B2: Fondos en Barra",
+                            sets: 3,
+                            reps: "8-10",
+                            rest: 90,
+                            equipment: "Paralelas/Barra",
+                            notes: "No uses anillas aún. Baja controlado.",
+                            why: "Tríceps y pectoral con estabilidad."
+                        }
+                    ]
+                },
+                {
+                    id: "core",
+                    title: "Paso 5: El Postre (Core y Prehab)",
+                    subtitle: "Blindaje",
+                    color: "bg-purple-900",
+                    exercises: [
+                        {
+                            id: "core1",
+                            name: "Elevación de Rodillas",
+                            sets: 3,
+                            reps: "12-15",
+                            rest: 60,
+                            notes: "Sin balanceo. Baja lento (3 seg).",
+                            why: "Abdomen sin compresión lumbar."
+                        },
+                        {
+                            id: "prehab1",
+                            name: "Scapular Pull-ups",
+                            sets: 2,
+                            reps: "12-15",
+                            rest: 60,
+                            notes: "Brazos bloqueados. Solo mueve hombros.",
+                            why: "Prevención de lesiones."
+                        }
+                    ]
+                }
+            ]
+        };
+
+        // --- Components ---
+
+        const TimerOverlay = ({ initialTime, isOpen, onClose, onComplete }) => {
+            const [timeLeft, setTimeLeft] = useState(initialTime);
+            const [isActive, setIsActive] = useState(false);
+            
+            useEffect(() => {
+                if (isOpen) {
+                    setTimeLeft(initialTime);
+                    setIsActive(true);
+                }
+            }, [isOpen, initialTime]);
+
+            useEffect(() => {
+                let interval = null;
+                if (isActive && timeLeft > 0) {
+                    interval = setInterval(() => {
+                        setTimeLeft(prev => prev - 1);
+                    }, 1000);
+                } else if (timeLeft === 0) {
+                    setIsActive(false);
+                    if (onComplete) onComplete();
+                    // Play sound or vibrate
+                    if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+                }
+                return () => clearInterval(interval);
+            }, [isActive, timeLeft]);
+
+            if (!isOpen) return null;
+
+            const progress = ((initialTime - timeLeft) / initialTime) * 100;
+
+            return (
+                <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/90 backdrop-blur-sm animate-fade-in">
+                    <div className="w-full max-w-md bg-zinc-900 rounded-t-3xl p-6 pb-12 shadow-2xl border-t border-zinc-700">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-xl font-bold text-orange-500">Descanso</h3>
+                            <button onClick={onClose} className="text-zinc-400 hover:text-white">✕ Cerrar</button>
+                        </div>
+                        
+                        <div className="text-center mb-8 relative">
+                            <div className="text-7xl font-mono font-bold tracking-tighter text-white">
+                                {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+                            </div>
+                            <div className="text-sm text-zinc-500 mt-2">Próxima serie en breve...</div>
+                        </div>
+
+                        <div className="h-4 bg-zinc-800 rounded-full overflow-hidden mb-8">
+                            <div 
+                                className="h-full bg-gradient-to-r from-orange-600 to-amber-400 timer-progress"
+                                style={{ width: `${100 - progress}%` }}
+                            ></div>
+                        </div>
+
+                        <div className="flex gap-4 justify-center">
+                            <button 
+                                onClick={() => setTimeLeft(prev => prev + 10)}
+                                className="px-4 py-2 bg-zinc-800 rounded-lg text-sm font-medium hover:bg-zinc-700"
+                            >
+                                +10s
+                            </button>
+                            <button 
+                                onClick={() => setIsActive(!isActive)}
+                                className={`px-8 py-3 rounded-xl font-bold text-lg flex items-center gap-2 ${isActive ? 'bg-zinc-700' : 'bg-orange-600'}`}
+                            >
+                                {isActive ? <Pause size={20} /> : <Play size={20} />}
+                                {isActive ? 'Pausa' : 'Reanudar'}
+                            </button>
+                             <button 
+                                onClick={() => setTimeLeft(prev => Math.max(0, prev - 10))}
+                                className="px-4 py-2 bg-zinc-800 rounded-lg text-sm font-medium hover:bg-zinc-700"
+                            >
+                                -10s
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const ExerciseCard = ({ exercise, onRestStart, isSuperset }) => {
+            const [expanded, setExpanded] = useState(false);
+            const [completedSets, setCompletedSets] = useState(new Set());
+
+            const toggleSet = (setIdx) => {
+                const newSets = new Set(completedSets);
+                if (newSets.has(setIdx)) {
+                    newSets.delete(setIdx);
+                } else {
+                    newSets.add(setIdx);
+                    // Trigger rest only if adding a set
+                    onRestStart(exercise.rest);
+                }
+                setCompletedSets(newSets);
+            };
+
+            return (
+                <div className={`mb-4 bg-zinc-800 rounded-xl overflow-hidden border border-zinc-700 shadow-md card-enter ${isSuperset ? 'border-l-4 border-l-orange-500' : ''}`}>
+                    <div className="p-4">
+                        <div className="flex justify-between items-start">
+                            <div onClick={() => setExpanded(!expanded)} className="flex-1 cursor-pointer">
+                                <h3 className="font-bold text-lg text-white">{exercise.name}</h3>
+                                <p className="text-sm text-zinc-400">{exercise.sets} Series × {exercise.reps}</p>
+                            </div>
+                            <button onClick={() => setExpanded(!expanded)} className="text-zinc-500 p-1">
+                                {expanded ? <ChevronUp size={20}/> : <Info size={20}/>}
+                            </button>
+                        </div>
+
+                        {/* Sets Tracker */}
+                        <div className="mt-4 flex flex-wrap gap-3">
+                            {Array.from({ length: exercise.sets }).map((_, idx) => (
+                                <button
+                                    key={idx}
+                                    onClick={() => toggleSet(idx)}
+                                    className={`
+                                        h-10 w-10 rounded-full flex items-center justify-center font-bold transition-all
+                                        ${completedSets.has(idx) 
+                                            ? 'bg-orange-600 text-white shadow-lg shadow-orange-900/50 scale-105' 
+                                            : 'bg-zinc-700 text-zinc-400 hover:bg-zinc-600'}
+                                    `}
+                                >
+                                    {completedSets.has(idx) ? <CheckCircle size={18}/> : idx + 1}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Expanded Info */}
+                    {expanded && (
+                        <div className="bg-zinc-900/50 p-4 border-t border-zinc-700 text-sm">
+                            <div className="mb-3">
+                                <span className="text-orange-400 font-bold block mb-1">🔥 La Receta:</span>
+                                <p className="text-zinc-300 leading-relaxed">{exercise.notes}</p>
+                            </div>
+                            <div>
+                                <span className="text-blue-400 font-bold block mb-1">💡 ¿Por qué?</span>
+                                <p className="text-zinc-400 italic">{exercise.why}</p>
+                            </div>
+                            <div className="mt-3 flex items-center gap-2 text-zinc-500 text-xs uppercase tracking-wider">
+                                <Clock size={12}/> Descanso: {exercise.rest}s
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const WarmupSection = ({ section }) => {
+            const [done, setDone] = useState(false);
+            return (
+                <div className="mb-8">
+                    <div className={`p-4 rounded-xl bg-gradient-to-br from-blue-900 to-slate-800 border border-blue-700 mb-4`}>
+                        <h2 className="font-bold text-xl text-white mb-1">{section.title}</h2>
+                        <p className="text-blue-200 text-sm">{section.subtitle}</p>
+                    </div>
+                    
+                    <div className="bg-zinc-800 rounded-xl p-4 border border-zinc-700">
+                        {section.items.map((item, idx) => (
+                            <div key={idx} className="flex gap-3 mb-4 last:mb-0 border-b border-zinc-700 last:border-0 pb-3 last:pb-0">
+                                <div className="mt-1 h-2 w-2 rounded-full bg-blue-500 shrink-0"></div>
+                                <div>
+                                    <h4 className="font-medium text-white">{item.name}</h4>
+                                    <p className="text-sm text-zinc-400">{item.desc}</p>
+                                    <span className="text-xs text-blue-400 mt-1 inline-block">{item.duration}</span>
+                                </div>
+                            </div>
+                        ))}
+                        <button 
+                            onClick={() => setDone(!done)}
+                            className={`w-full mt-2 py-3 rounded-lg font-bold transition-colors ${done ? 'bg-green-600 text-white' : 'bg-zinc-700 text-zinc-300'}`}
+                        >
+                            {done ? "Calentamiento Completado ✓" : "Marcar como hecho"}
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        const WorkoutView = ({ onFinish }) => {
+            const [timerState, setTimerState] = useState({ isOpen: false, duration: 0 });
+
+            const handleRestStart = (duration) => {
+                setTimerState({ isOpen: true, duration });
+            };
+
+            return (
+                <div className="pb-24">
+                    {/* Header */}
+                    <header className="flex justify-between items-center mb-6">
+                        <div>
+                            <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-orange-400 to-amber-200">
+                                Hoy Entrenas
+                            </h1>
+                            <p className="text-zinc-400 text-sm">Cimentación Anatómica</p>
+                        </div>
+                        <div className="text-right">
+                            <span className="block text-xs text-zinc-500 uppercase tracking-widest">Duración</span>
+                            <span className="font-mono text-orange-400">~80 min</span>
+                        </div>
+                    </header>
+
+                    {/* Routine */}
+                    {ROUTINE.sections.map((section) => (
+                        <div key={section.id} className="mb-8">
+                            {section.id === 'warmup' ? (
+                                <WarmupSection section={section} />
+                            ) : (
+                                <>
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <div className={`h-8 w-1 rounded-full ${section.color.replace('bg-', 'bg-')}`}></div>
+                                        <div>
+                                            <h2 className="font-bold text-lg text-white">{section.title}</h2>
+                                            {section.isSuperset && (
+                                                <span className="text-xs bg-orange-900/50 text-orange-300 px-2 py-0.5 rounded border border-orange-800">
+                                                    Alternar ejercicios
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    
+                                    <div className={section.isSuperset ? "pl-2 border-l border-dashed border-zinc-700" : ""}>
+                                        {section.exercises.map(ex => (
+                                            <ExerciseCard 
+                                                key={ex.id} 
+                                                exercise={ex} 
+                                                onRestStart={handleRestStart}
+                                                isSuperset={section.isSuperset}
+                                            />
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    ))}
+
+                    {/* Finish Button */}
+                    <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black via-black/90 to-transparent">
+                        <button 
+                            onClick={onFinish}
+                            className="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-4 rounded-2xl shadow-lg shadow-orange-900/40 transform transition-all active:scale-95 flex items-center justify-center gap-2"
+                        >
+                            <Award size={20} />
+                            Terminar Entrenamiento
+                        </button>
+                    </div>
+
+                    <TimerOverlay 
+                        isOpen={timerState.isOpen} 
+                        initialTime={timerState.duration}
+                        onClose={() => setTimerState({...timerState, isOpen: false})} 
+                    />
+                </div>
+            );
+        };
+
+        const HomeView = ({ onStart }) => {
+            const [history, setHistory] = useState([]);
+
+            useEffect(() => {
+                const saved = localStorage.getItem('anillas_history');
+                if (saved) setHistory(JSON.parse(saved));
+            }, []);
+
+            return (
+                <div className="h-full flex flex-col">
+                    <div className="flex-1 flex flex-col justify-center items-center text-center p-6">
+                        <div className="w-24 h-24 bg-gradient-to-br from-orange-600 to-amber-700 rounded-full flex items-center justify-center mb-6 shadow-2xl shadow-orange-900/50 ring-4 ring-black ring-opacity-50">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-12 h-12 text-white">
+                                <circle cx="12" cy="12" r="10"/>
+                                <circle cx="12" cy="12" r="4"/>
+                            </svg>
+                        </div>
+                        <h1 className="text-4xl font-black text-white mb-2 tracking-tight">ANILLOS</h1>
+                        <p className="text-orange-400 font-medium mb-8">Fase 1: Cimentación</p>
+
+                        <div className="w-full max-w-sm bg-zinc-800/50 rounded-2xl p-6 border border-zinc-700 backdrop-blur-sm mb-8">
+                            <div className="flex justify-between text-sm text-zinc-400 mb-4 border-b border-zinc-700 pb-2">
+                                <span>Programación</span>
+                                <span>Mar • Jue • Sáb</span>
+                            </div>
+                            <div className="text-left space-y-3">
+                                <div className="flex items-start gap-3">
+                                    <div className="bg-blue-900/50 p-1.5 rounded text-blue-400"><Clock size={16}/></div>
+                                    <div>
+                                        <h4 className="font-bold text-white text-sm">Tiempo</h4>
+                                        <p className="text-xs text-zinc-500">75-90 minutos</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-3">
+                                    <div className="bg-orange-900/50 p-1.5 rounded text-orange-400"><Award size={16}/></div>
+                                    <div>
+                                        <h4 className="font-bold text-white text-sm">Objetivo</h4>
+                                        <p className="text-xs text-zinc-500">Preparar tendones y articulaciones</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button 
+                            onClick={onStart}
+                            className="w-full max-w-sm bg-white text-black font-black py-4 rounded-xl shadow-lg shadow-white/10 hover:bg-zinc-200 transition-all flex items-center justify-center gap-2"
+                        >
+                            <Play fill="currentColor" size={20} />
+                            EMPEZAR SESIÓN
+                        </button>
+                    </div>
+
+                    <div className="p-6">
+                        <h3 className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-3">Historial Reciente</h3>
+                        <div className="flex gap-2 overflow-x-auto pb-2">
+                            {history.length === 0 ? (
+                                <div className="text-zinc-600 text-sm italic w-full text-center py-4 border border-dashed border-zinc-800 rounded-lg">
+                                    Aún no hay registros. ¡A entrenar!
+                                </div>
+                            ) : (
+                                history.slice(0,5).map((log, i) => (
+                                    <div key={i} className="bg-zinc-800 min-w-[100px] p-3 rounded-lg border border-zinc-700">
+                                        <div className="text-orange-400 font-bold text-lg">{new Date(log.date).getDate()}</div>
+                                        <div className="text-zinc-500 text-xs">{new Date(log.date).toLocaleString('default', { month: 'short' })}</div>
+                                        <div className="text-green-500 text-xs mt-1">✓ Hecho</div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const FinishScreen = ({ onHome }) => {
+            return (
+                <div className="h-screen flex flex-col items-center justify-center p-8 text-center bg-gradient-to-b from-zinc-900 to-black">
+                    <div className="mb-6 animate-bounce">
+                        <Award size={64} className="text-orange-500 mx-auto" />
+                    </div>
+                    <h2 className="text-3xl font-bold text-white mb-4">¡Sesión Completada!</h2>
+                    <p className="text-zinc-400 mb-8 max-w-xs mx-auto">
+                        Gran trabajo cimentando esa base. Recuerda comer proteína (1.6g/kg) y descansar 48h.
+                    </p>
+                    
+                    <div className="bg-zinc-800 p-6 rounded-xl border border-zinc-700 w-full max-w-sm mb-8">
+                        <h3 className="text-white font-bold mb-2">Consejo del Chef 👨‍🍳</h3>
+                        <p className="text-zinc-400 text-sm italic">
+                            "La paciencia es el ingrediente secreto. No intentes el Muscle-up todavía. La consistencia gana a la intensidad."
+                        </p>
+                    </div>
+
+                    <button 
+                        onClick={onHome}
+                        className="bg-zinc-700 hover:bg-zinc-600 text-white px-8 py-3 rounded-xl font-bold transition-colors"
+                    >
+                        Volver al Inicio
+                    </button>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [view, setView] = useState('home');
+
+            const startWorkout = () => setView('workout');
+            
+            const finishWorkout = () => {
+                const newLog = { date: new Date().toISOString(), completed: true };
+                const history = JSON.parse(localStorage.getItem('anillas_history') || '[]');
+                localStorage.setItem('anillas_history', JSON.stringify([newLog, ...history]));
+                setView('finish');
+            };
+
+            return (
+                <div className="min-h-screen max-w-md mx-auto bg-black border-x border-zinc-900 shadow-2xl relative">
+                    {view === 'home' && <HomeView onStart={startWorkout} />}
+                    {view === 'workout' && (
+                        <div className="p-4 pt-6 animate-fade-in">
+                            <button 
+                                onClick={() => setView('home')} 
+                                className="mb-4 text-zinc-500 hover:text-white flex items-center gap-1 text-sm"
+                            >
+                                <RotateCcw size={14} /> Cancelar
+                            </button>
+                            <WorkoutView onFinish={finishWorkout} />
+                        </div>
+                    )}
+                    {view === 'finish' && <FinishScreen onHome={() => setView('home')} />}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
