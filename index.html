@@ -40,6 +40,13 @@
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        .modal-enter {
+            animation: fadeIn 0.2s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
     </style>
 </head>
 <body>
@@ -48,7 +55,7 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        // --- Icons (Inline SVGs to avoid dependency errors) ---
+        // --- Icons ---
         const Icon = ({ size = 24, color = "currentColor", children, ...props }) => (
             <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
                 {children}
@@ -64,10 +71,35 @@
         const Award = (props) => <Icon {...props}><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></Icon>;
         const ChevronUp = (props) => <Icon {...props}><polyline points="18 15 12 9 6 15"/></Icon>;
         const ChevronDown = (props) => <Icon {...props}><polyline points="6 9 12 15 18 9"/></Icon>;
+        const BookOpen = (props) => <Icon {...props}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></Icon>;
+        const Brain = (props) => <Icon {...props}><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"/></Icon>;
+        const Activity = (props) => <Icon {...props}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></Icon>;
+        const Settings = (props) => <Icon {...props}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></Icon>;
+        const AlertTriangle = (props) => <Icon {...props}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></Icon>;
+
+        // --- Audio Helper ---
+        const playTimerFinishedSound = () => {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                const ctx = new AudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, ctx.currentTime); 
+                osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.1); 
+                gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.5);
+            } catch (e) { console.error(e); }
+        };
 
         // --- Data Structure ---
         const ROUTINE = {
-            title: "Fase 1: Cimentación Anatómica",
+            title: "Fase 1: Cimentación",
             schedule: "Mar, Jue, Sáb",
             sections: [
                 {
@@ -93,8 +125,13 @@
                             sets: 3,
                             reps: "20-30 seg",
                             rest: 90,
-                            notes: "Brazos rectos, nudillos hacia fuera, hombros abajo.",
-                            why: "Estabilización y salud escapular."
+                            type: "time",
+                            range: "20-30",
+                            rangeUnit: "s",
+                            notes: "Brazos rectos, nudillos hacia fuera.",
+                            why: "Estabilización y salud escapular.",
+                            recipe: "1. Salta sobre las anillas con brazos bloqueados (rectos).\n2. Gira las muñecas hacia afuera (RTO).\n3. Empuja los hombros hacia abajo.\n4. Mantén el cuerpo hueco.",
+                            progressionTip: "⏱ TIEMPO: Meta 30s perfectos. Si lo logras, aumenta el RTO la próxima vez."
                         }
                     ]
                 },
@@ -111,9 +148,13 @@
                             sets: 4,
                             reps: "6-10",
                             rest: 120,
-                            equipment: "Barra",
+                            type: "reps",
+                            range: "6-10",
+                            rangeUnit: "reps",
                             notes: "Retracción escapular antes de subir.",
-                            why: "Fuerza base y salud de hombros."
+                            why: "Fuerza base.",
+                            recipe: "1. Cuélgate (pronación).\n2. Retracción escapular.\n3. Tracciona codos a costillas.\n4. Barbilla pasa la barra.",
+                            progressionTip: "📊 REPS (6-10): Si haces 10 perfectas en todas las series, dificulta el ejercicio."
                         },
                         {
                             id: "a2",
@@ -121,9 +162,13 @@
                             sets: 4,
                             reps: "10-15",
                             rest: 120,
-                            equipment: "Anillas",
-                            notes: "Junta las anillas al final del movimiento.",
-                            why: "Estabilidad y trabajo pectoral intenso."
+                            type: "reps",
+                            range: "10-15",
+                            rangeUnit: "reps",
+                            notes: "Junta las anillas al final.",
+                            why: "Estabilidad pectoral.",
+                            recipe: "1. Anillas bajas.\n2. Plancha tensa.\n3. Baja pecho a manos.\n4. Empuja y junta anillas.",
+                            progressionTip: "📊 REPS (10-15): Meta 15 perfectas. Si tiemblas, esa rep no cuenta."
                         }
                     ]
                 },
@@ -140,9 +185,13 @@
                             sets: 3,
                             reps: "10-12",
                             rest: 90,
-                            equipment: "Anillas",
-                            notes: "Cuerpo recto, toca el pecho con las anillas.",
-                            why: "Postura y romboides."
+                            type: "reps",
+                            range: "10-12",
+                            rangeUnit: "reps",
+                            notes: "Cuerpo recto, toca el pecho.",
+                            why: "Romboides y postura.",
+                            recipe: "1. Anillas a cintura/pecho.\n2. Cuerpo tabla.\n3. Tracciona a costillas.\n4. Retracción final.",
+                            progressionTip: "📊 REPS (10-12): No pierdas rango. Tocar pecho es obligatorio."
                         },
                         {
                             id: "b2",
@@ -150,16 +199,20 @@
                             sets: 3,
                             reps: "8-10",
                             rest: 90,
-                            equipment: "Paralelas/Barra",
-                            notes: "No uses anillas aún. Baja controlado.",
-                            why: "Tríceps y pectoral con estabilidad."
+                            type: "reps",
+                            range: "8-10",
+                            rangeUnit: "reps",
+                            notes: "Barras fijas. Baja controlado.",
+                            why: "Tríceps y pectoral.",
+                            recipe: "1. Paralelas fijas.\n2. Baja hombros bajo codos.\n3. No encojas hombros.\n4. Empuja fuerte.",
+                            progressionTip: "📊 REPS (8-10): Control es rey. Baja en 3 segundos si es fácil."
                         }
                     ]
                 },
                 {
                     id: "core",
-                    title: "Paso 5: El Postre (Core y Prehab)",
-                    subtitle: "Blindaje",
+                    title: "Paso 5: El Postre",
+                    subtitle: "Core y Prehab",
                     color: "bg-purple-900",
                     exercises: [
                         {
@@ -168,8 +221,13 @@
                             sets: 3,
                             reps: "12-15",
                             rest: 60,
-                            notes: "Sin balanceo. Baja lento (3 seg).",
-                            why: "Abdomen sin compresión lumbar."
+                            type: "reps",
+                            range: "12-15",
+                            rangeUnit: "reps",
+                            notes: "Sin balanceo.",
+                            why: "Abdomen.",
+                            recipe: "1. Cuélgate quieto.\n2. Rodillas al pecho.\n3. Baja en 3 seg.",
+                            progressionTip: "📊 REPS (12-15): Sin impulso."
                         },
                         {
                             id: "prehab1",
@@ -177,17 +235,146 @@
                             sets: 2,
                             reps: "12-15",
                             rest: 60,
-                            notes: "Brazos bloqueados. Solo mueve hombros.",
-                            why: "Prevención de lesiones."
+                            type: "reps",
+                            range: "12-15",
+                            rangeUnit: "reps",
+                            notes: "Solo hombros.",
+                            why: "Prevención.",
+                            recipe: "1. Brazos rectos.\n2. Sube y baja hombros.\n3. Codos bloqueados.",
+                            progressionTip: "📊 REPS (12-15): Rango corto, máxima activación."
                         }
                     ]
                 }
             ]
         };
 
-        // --- Components ---
+        // --- COMPONENTS ---
 
-        const TimerOverlay = ({ initialTime, isOpen, onClose, onComplete }) => {
+        // Logger Modal for Reps/Config/Quality
+        const LoggerModal = ({ isOpen, onClose, exercise, setIndex, onSave, initialData, lastConfig }) => {
+            const [reps, setReps] = useState('');
+            const [config, setConfig] = useState(lastConfig || '');
+            const [qualityFailed, setQualityFailed] = useState(false);
+            const [rir, setRir] = useState(null); // 0, 1, 2
+
+            useEffect(() => {
+                if (isOpen) {
+                    setReps(initialData?.reps || '');
+                    setConfig(initialData?.config || lastConfig || '');
+                    setQualityFailed(initialData?.qualityFailed || false);
+                    setRir(initialData?.rir || null);
+                }
+            }, [isOpen, initialData, lastConfig]);
+
+            if (!isOpen) return null;
+
+            const handleSave = () => {
+                if (!reps) return;
+                onSave({
+                    reps: parseInt(reps),
+                    config,
+                    qualityFailed,
+                    rir
+                });
+                onClose();
+            };
+
+            return (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/95 backdrop-blur-sm p-4 modal-enter">
+                    <div className="bg-zinc-900 w-full max-w-sm rounded-2xl border border-zinc-700 shadow-2xl overflow-hidden">
+                        <div className="bg-zinc-800 p-4 border-b border-zinc-700 flex justify-between items-center">
+                            <h3 className="font-bold text-white">Registro Serie {setIndex + 1}</h3>
+                            <button onClick={onClose} className="text-zinc-400 hover:text-white">✕</button>
+                        </div>
+                        
+                        <div className="p-5 space-y-6">
+                            {/* 1. Cantidad */}
+                            <div>
+                                <label className="block text-xs font-bold text-zinc-400 uppercase mb-2">
+                                    {exercise.type === 'time' ? 'Tiempo (Segundos)' : 'Repeticiones'}
+                                </label>
+                                <input 
+                                    type="number" 
+                                    value={reps}
+                                    onChange={(e) => setReps(e.target.value)}
+                                    placeholder={exercise.type === 'time' ? "Ej: 25" : "Ej: 10"}
+                                    className="w-full bg-zinc-950 border border-zinc-700 rounded-xl p-3 text-white text-lg focus:border-orange-500 outline-none"
+                                    autoFocus
+                                />
+                            </div>
+
+                            {/* 2. Configuración Mecánica */}
+                            <div>
+                                <label className="block text-xs font-bold text-zinc-400 uppercase mb-2 flex items-center gap-1">
+                                    <Settings size={12}/> Configuración Mecánica
+                                </label>
+                                <input 
+                                    type="text" 
+                                    value={config}
+                                    onChange={(e) => setConfig(e.target.value)}
+                                    placeholder="Ej: Anillas a la rodilla, Pies elevados..."
+                                    className="w-full bg-zinc-950 border border-zinc-700 rounded-xl p-3 text-sm text-white focus:border-blue-500 outline-none"
+                                />
+                                <p className="text-[10px] text-zinc-500 mt-1">Lo recordaremos para la próxima vez.</p>
+                            </div>
+
+                            {/* 3. Calidad (Fallo Técnico) */}
+                            <div>
+                                <label className="block text-xs font-bold text-zinc-400 uppercase mb-2">Calidad Técnica</label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button 
+                                        onClick={() => setQualityFailed(false)}
+                                        className={`p-3 rounded-xl border text-sm font-medium transition-colors ${!qualityFailed ? 'bg-green-900/30 border-green-500 text-green-400' : 'bg-zinc-950 border-zinc-800 text-zinc-500'}`}
+                                    >
+                                        ✨ Perfecta
+                                    </button>
+                                    <button 
+                                        onClick={() => setQualityFailed(true)}
+                                        className={`p-3 rounded-xl border text-sm font-medium transition-colors ${qualityFailed ? 'bg-red-900/30 border-red-500 text-red-400' : 'bg-zinc-950 border-zinc-800 text-zinc-500'}`}
+                                    >
+                                        ⚠️ Fallo Técnico
+                                    </button>
+                                </div>
+                                {qualityFailed && (
+                                    <div className="mt-2 p-2 bg-red-900/20 border border-red-900/50 rounded-lg flex gap-2 items-start">
+                                        <AlertTriangle size={14} className="text-red-500 shrink-0 mt-0.5"/>
+                                        <p className="text-xs text-red-300">
+                                            <strong>¡Detente!</strong> Este es tu "Tope Real". No subas reps la próxima vez, mejora la calidad.
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* 4. Esfuerzo (RIR) */}
+                            <div>
+                                <label className="block text-xs font-bold text-zinc-400 uppercase mb-2">¿Podrías hacer otra bien hecha?</label>
+                                <div className="flex gap-2">
+                                    {[0, 1, 2].map((val) => (
+                                        <button 
+                                            key={val}
+                                            onClick={() => setRir(val)}
+                                            className={`flex-1 p-2 rounded-lg border text-xs transition-colors ${rir === val ? 'bg-blue-900/30 border-blue-500 text-blue-400' : 'bg-zinc-950 border-zinc-800 text-zinc-500'}`}
+                                        >
+                                            {val === 0 ? "No (Límite)" : val === 1 ? "Quizás 1" : "Sí, >2"}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <button 
+                                onClick={handleSave}
+                                disabled={!reps}
+                                className="w-full bg-white text-black font-bold py-3 rounded-xl hover:bg-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Guardar Serie
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const TimerOverlay = ({ initialTime, isOpen, onClose, onComplete, nextTip }) => {
             const [timeLeft, setTimeLeft] = useState(initialTime);
             const [isActive, setIsActive] = useState(false);
             
@@ -206,8 +393,8 @@
                     }, 1000);
                 } else if (timeLeft === 0) {
                     setIsActive(false);
+                    playTimerFinishedSound();
                     if (onComplete) onComplete();
-                    // Play sound or vibrate
                     if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
                 }
                 return () => clearInterval(interval);
@@ -218,67 +405,90 @@
             const progress = ((initialTime - timeLeft) / initialTime) * 100;
 
             return (
-                <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/90 backdrop-blur-sm animate-fade-in">
-                    <div className="w-full max-w-md bg-zinc-900 rounded-t-3xl p-6 pb-12 shadow-2xl border-t border-zinc-700">
-                        <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-xl font-bold text-orange-500">Descanso</h3>
-                            <button onClick={onClose} className="text-zinc-400 hover:text-white">✕ Cerrar</button>
-                        </div>
+                <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/95 backdrop-blur-md animate-fade-in">
+                    <div className="w-full max-w-md h-full flex flex-col p-6 pt-12">
                         
-                        <div className="text-center mb-8 relative">
-                            <div className="text-7xl font-mono font-bold tracking-tighter text-white">
-                                {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+                        <div className="flex justify-between items-center mb-8">
+                            <div>
+                                <h3 className="text-sm font-bold text-orange-500 uppercase tracking-widest">Descanso Estricto</h3>
+                                <div className="text-6xl font-mono font-bold tracking-tighter text-white mt-2">
+                                    {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+                                </div>
                             </div>
-                            <div className="text-sm text-zinc-500 mt-2">Próxima serie en breve...</div>
+                            <button onClick={onClose} className="bg-zinc-800 p-2 rounded-full text-zinc-400 hover:text-white">✕</button>
                         </div>
 
-                        <div className="h-4 bg-zinc-800 rounded-full overflow-hidden mb-8">
+                        <div className="h-2 bg-zinc-800 rounded-full overflow-hidden mb-4">
                             <div 
                                 className="h-full bg-gradient-to-r from-orange-600 to-amber-400 timer-progress"
                                 style={{ width: `${100 - progress}%` }}
                             ></div>
                         </div>
 
-                        <div className="flex gap-4 justify-center">
-                            <button 
-                                onClick={() => setTimeLeft(prev => prev + 10)}
-                                className="px-4 py-2 bg-zinc-800 rounded-lg text-sm font-medium hover:bg-zinc-700"
-                            >
-                                +10s
-                            </button>
+                        <p className="text-center text-zinc-500 text-sm mb-8 animate-pulse">
+                            Tus tendones necesitan esto. No te adelantes.
+                        </p>
+
+                        <div className="flex gap-4 justify-center mb-8">
+                            <button onClick={() => setTimeLeft(p => p + 10)} className="px-4 py-3 bg-zinc-800 rounded-xl font-bold text-white hover:bg-zinc-700">+10s</button>
                             <button 
                                 onClick={() => setIsActive(!isActive)}
-                                className={`px-8 py-3 rounded-xl font-bold text-lg flex items-center gap-2 ${isActive ? 'bg-zinc-700' : 'bg-orange-600'}`}
+                                className={`flex-1 py-3 rounded-xl font-bold text-lg flex items-center justify-center gap-2 ${isActive ? 'bg-zinc-700' : 'bg-orange-600 text-white'}`}
                             >
                                 {isActive ? <Pause size={20} /> : <Play size={20} />}
                                 {isActive ? 'Pausa' : 'Reanudar'}
                             </button>
-                             <button 
-                                onClick={() => setTimeLeft(prev => Math.max(0, prev - 10))}
-                                className="px-4 py-2 bg-zinc-800 rounded-lg text-sm font-medium hover:bg-zinc-700"
-                            >
-                                -10s
-                            </button>
+                             <button onClick={() => setTimeLeft(p => Math.max(0, p - 10))} className="px-4 py-3 bg-zinc-800 rounded-xl font-bold text-white hover:bg-zinc-700">-10s</button>
+                        </div>
+
+                        {/* UP NEXT */}
+                        <div className="flex-1 overflow-y-auto custom-scrollbar">
+                            <div className="bg-zinc-900 rounded-2xl p-5 border border-zinc-800 shadow-xl">
+                                <div className="flex items-center gap-2 mb-3 text-emerald-400">
+                                    <BookOpen size={18} />
+                                    <span className="text-xs font-bold uppercase tracking-widest">A continuación</span>
+                                </div>
+                                <h4 className="text-xl font-bold text-white mb-2">
+                                    {nextTip ? nextTip.name : "Siguiente Serie"}
+                                </h4>
+                                {nextTip && nextTip.progressionTip && (
+                                    <div className="bg-zinc-800/50 p-3 rounded-lg border-l-2 border-orange-500 text-sm text-zinc-300 whitespace-pre-line mb-2">
+                                        {nextTip.progressionTip}
+                                    </div>
+                                )}
+                                {nextTip && nextTip.recipe && (
+                                    <div className="text-sm text-zinc-400 space-y-1">
+                                        {nextTip.recipe.split('\n').map((line, i) => (
+                                            <p key={i} className="flex gap-2"><span className="text-orange-500 font-bold">•</span>{line.replace(/^\d+\.\s/, '')}</p>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
             );
         };
 
-        const ExerciseCard = ({ exercise, onRestStart, isSuperset }) => {
+        const ExerciseCard = ({ exercise, onRestStart, isSuperset, nextExerciseInfo, onLogSet, logs, lastConfig }) => {
             const [expanded, setExpanded] = useState(false);
-            const [completedSets, setCompletedSets] = useState(new Set());
+            const [modalOpen, setModalOpen] = useState(false);
+            const [activeSetIdx, setActiveSetIdx] = useState(null);
 
-            const toggleSet = (setIdx) => {
-                const newSets = new Set(completedSets);
-                if (newSets.has(setIdx)) {
-                    newSets.delete(setIdx);
-                } else {
-                    newSets.add(setIdx);
-                    // Trigger rest only if adding a set
-                    onRestStart(exercise.rest);
+            const handleCircleClick = (idx) => {
+                setActiveSetIdx(idx);
+                setModalOpen(true);
+            };
+
+            const handleSaveLog = (data) => {
+                onLogSet(exercise.id, activeSetIdx, data);
+                
+                // Trigger Timer
+                let tip = nextExerciseInfo;
+                if (activeSetIdx + 1 === exercise.sets && exercise.lastSetTip) {
+                    tip = { name: exercise.lastSetTip.title, recipe: "", progressionTip: exercise.lastSetTip.text };
                 }
-                setCompletedSets(newSets);
+                onRestStart(exercise.rest, tip);
             };
 
             return (
@@ -286,8 +496,19 @@
                     <div className="p-4">
                         <div className="flex justify-between items-start">
                             <div onClick={() => setExpanded(!expanded)} className="flex-1 cursor-pointer">
-                                <h3 className="font-bold text-lg text-white">{exercise.name}</h3>
-                                <p className="text-sm text-zinc-400">{exercise.sets} Series × {exercise.reps}</p>
+                                <div className="flex items-center gap-2 mb-1">
+                                    <h3 className="font-bold text-lg text-white">{exercise.name}</h3>
+                                    {exercise.type === 'time' && <span className="bg-emerald-900/50 text-emerald-400 text-[10px] px-1.5 py-0.5 rounded border border-emerald-800">TIEMPO</span>}
+                                    {exercise.type === 'reps' && <span className="bg-blue-900/50 text-blue-400 text-[10px] px-1.5 py-0.5 rounded border border-blue-800">REPS</span>}
+                                </div>
+                                <p className="text-sm text-zinc-400 flex items-center gap-2">
+                                    {exercise.sets} Series × <span className="text-orange-400 font-bold">{exercise.range || exercise.reps}</span> {exercise.rangeUnit}
+                                </p>
+                                {lastConfig && (
+                                    <p className="text-[10px] text-zinc-500 mt-1 flex items-center gap-1">
+                                        <Settings size={10}/> Config anterior: {lastConfig}
+                                    </p>
+                                )}
                             </div>
                             <button onClick={() => setExpanded(!expanded)} className="text-zinc-500 p-1">
                                 {expanded ? <ChevronUp size={20}/> : <Info size={20}/>}
@@ -296,39 +517,54 @@
 
                         {/* Sets Tracker */}
                         <div className="mt-4 flex flex-wrap gap-3">
-                            {Array.from({ length: exercise.sets }).map((_, idx) => (
-                                <button
-                                    key={idx}
-                                    onClick={() => toggleSet(idx)}
-                                    className={`
-                                        h-10 w-10 rounded-full flex items-center justify-center font-bold transition-all
-                                        ${completedSets.has(idx) 
-                                            ? 'bg-orange-600 text-white shadow-lg shadow-orange-900/50 scale-105' 
-                                            : 'bg-zinc-700 text-zinc-400 hover:bg-zinc-600'}
-                                    `}
-                                >
-                                    {completedSets.has(idx) ? <CheckCircle size={18}/> : idx + 1}
-                                </button>
-                            ))}
+                            {Array.from({ length: exercise.sets }).map((_, idx) => {
+                                const log = logs && logs[idx];
+                                return (
+                                    <button
+                                        key={idx}
+                                        onClick={() => handleCircleClick(idx)}
+                                        className={`
+                                            h-12 w-12 rounded-full flex flex-col items-center justify-center font-bold transition-all border-2
+                                            ${log 
+                                                ? (log.qualityFailed ? 'bg-red-900/50 border-red-500 text-red-200' : 'bg-orange-600 border-orange-500 text-white shadow-lg') 
+                                                : 'bg-zinc-800 border-zinc-600 text-zinc-500 hover:border-zinc-400'}
+                                        `}
+                                    >
+                                        {log ? (
+                                            <>
+                                                <span className="text-sm leading-none">{log.reps}</span>
+                                                <span className="text-[9px] font-normal opacity-70">{exercise.type === 'time' ? 's' : 'r'}</span>
+                                            </>
+                                        ) : (
+                                            <span className="text-sm">{idx + 1}</span>
+                                        )}
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
 
-                    {/* Expanded Info */}
                     {expanded && (
                         <div className="bg-zinc-900/50 p-4 border-t border-zinc-700 text-sm">
-                            <div className="mb-3">
-                                <span className="text-orange-400 font-bold block mb-1">🔥 La Receta:</span>
-                                <p className="text-zinc-300 leading-relaxed">{exercise.notes}</p>
+                            <div className="mb-4 bg-zinc-800 p-3 rounded-lg border border-zinc-700">
+                                <span className="text-orange-400 font-bold block mb-1 text-xs uppercase">Meta de Progresión</span>
+                                <p className="text-zinc-300 text-xs leading-relaxed">{exercise.progressionTip}</p>
                             </div>
-                            <div>
-                                <span className="text-blue-400 font-bold block mb-1">💡 ¿Por qué?</span>
-                                <p className="text-zinc-400 italic">{exercise.why}</p>
-                            </div>
-                            <div className="mt-3 flex items-center gap-2 text-zinc-500 text-xs uppercase tracking-wider">
-                                <Clock size={12}/> Descanso: {exercise.rest}s
+                            <div className="space-y-2 pl-2 border-l-2 border-zinc-700">
+                                {exercise.recipe ? exercise.recipe.split('\n').map((l, i) => <p key={i} className="text-zinc-300 text-xs">{l}</p>) : <p className="text-zinc-400">{exercise.notes}</p>}
                             </div>
                         </div>
                     )}
+
+                    <LoggerModal 
+                        isOpen={modalOpen} 
+                        onClose={() => setModalOpen(false)}
+                        exercise={exercise}
+                        setIndex={activeSetIdx}
+                        onSave={handleSaveLog}
+                        initialData={logs ? logs[activeSetIdx] : null}
+                        lastConfig={lastConfig}
+                    />
                 </div>
             );
         };
@@ -341,22 +577,17 @@
                         <h2 className="font-bold text-xl text-white mb-1">{section.title}</h2>
                         <p className="text-blue-200 text-sm">{section.subtitle}</p>
                     </div>
-                    
                     <div className="bg-zinc-800 rounded-xl p-4 border border-zinc-700">
                         {section.items.map((item, idx) => (
-                            <div key={idx} className="flex gap-3 mb-4 last:mb-0 border-b border-zinc-700 last:border-0 pb-3 last:pb-0">
+                            <div key={idx} className="flex gap-3 mb-4 last:mb-0 pb-3 border-b border-zinc-700 last:border-0 last:pb-0">
                                 <div className="mt-1 h-2 w-2 rounded-full bg-blue-500 shrink-0"></div>
                                 <div>
                                     <h4 className="font-medium text-white">{item.name}</h4>
                                     <p className="text-sm text-zinc-400">{item.desc}</p>
-                                    <span className="text-xs text-blue-400 mt-1 inline-block">{item.duration}</span>
                                 </div>
                             </div>
                         ))}
-                        <button 
-                            onClick={() => setDone(!done)}
-                            className={`w-full mt-2 py-3 rounded-lg font-bold transition-colors ${done ? 'bg-green-600 text-white' : 'bg-zinc-700 text-zinc-300'}`}
-                        >
+                        <button onClick={() => setDone(!done)} className={`w-full mt-2 py-3 rounded-lg font-bold transition-colors ${done ? 'bg-green-600 text-white' : 'bg-zinc-700 text-zinc-300'}`}>
                             {done ? "Calentamiento Completado ✓" : "Marcar como hecho"}
                         </button>
                     </div>
@@ -364,30 +595,40 @@
             );
         };
 
-        const WorkoutView = ({ onFinish }) => {
-            const [timerState, setTimerState] = useState({ isOpen: false, duration: 0 });
+        const WorkoutView = ({ onFinish, currentWeek, isDeload, lastConfigs }) => {
+            const [timerState, setTimerState] = useState({ isOpen: false, duration: 0, nextTip: null });
+            const [workoutLogs, setWorkoutLogs] = useState({}); // { exId: [ {reps, config, quality...} ] }
 
-            const handleRestStart = (duration) => {
-                setTimerState({ isOpen: true, duration });
+            const handleRestStart = (duration, nextTip) => {
+                setTimerState({ isOpen: true, duration, nextTip });
+            };
+
+            const handleLogSet = (exId, setIdx, data) => {
+                setWorkoutLogs(prev => {
+                    const exLogs = prev[exId] || [];
+                    exLogs[setIdx] = data;
+                    return { ...prev, [exId]: exLogs };
+                });
             };
 
             return (
                 <div className="pb-24">
-                    {/* Header */}
-                    <header className="flex justify-between items-center mb-6">
-                        <div>
-                            <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-orange-400 to-amber-200">
-                                Hoy Entrenas
-                            </h1>
-                            <p className="text-zinc-400 text-sm">Cimentación Anatómica</p>
-                        </div>
-                        <div className="text-right">
-                            <span className="block text-xs text-zinc-500 uppercase tracking-widest">Duración</span>
-                            <span className="font-mono text-orange-400">~80 min</span>
+                    <header className="mb-6">
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-orange-400 to-amber-200">
+                                    Semana {currentWeek}
+                                </h1>
+                                <p className="text-zinc-400 text-sm">Fase 1: Cimentación</p>
+                            </div>
+                            {isDeload && (
+                                <span className="bg-purple-900/50 text-purple-300 px-3 py-1 rounded-full text-xs font-bold border border-purple-700 animate-pulse">
+                                    Modo Descarga 📉
+                                </span>
+                            )}
                         </div>
                     </header>
 
-                    {/* Routine */}
                     {ROUTINE.sections.map((section) => (
                         <div key={section.id} className="mb-8">
                             {section.id === 'warmup' ? (
@@ -400,87 +641,88 @@
                                             <h2 className="font-bold text-lg text-white">{section.title}</h2>
                                             {section.isSuperset && (
                                                 <span className="text-xs bg-orange-900/50 text-orange-300 px-2 py-0.5 rounded border border-orange-800">
-                                                    Alternar ejercicios
+                                                    Alternar ejercicios (120s descanso)
                                                 </span>
                                             )}
                                         </div>
                                     </div>
                                     
                                     <div className={section.isSuperset ? "pl-2 border-l border-dashed border-zinc-700" : ""}>
-                                        {section.exercises.map(ex => (
-                                            <ExerciseCard 
-                                                key={ex.id} 
-                                                exercise={ex} 
-                                                onRestStart={handleRestStart}
-                                                isSuperset={section.isSuperset}
-                                            />
-                                        ))}
+                                        {section.exercises.map((ex, idx) => {
+                                            // Deload Logic: Cut sets in half
+                                            const adjustedSets = isDeload ? Math.max(2, Math.floor(ex.sets / 2)) : ex.sets;
+                                            const adjustedEx = { ...ex, sets: adjustedSets };
+
+                                            // Next Exercise Logic
+                                            let nextInfo = adjustedEx; 
+                                            if (section.isSuperset) {
+                                                const partnerIdx = idx === 0 ? 1 : 0;
+                                                if (section.exercises[partnerIdx]) nextInfo = section.exercises[partnerIdx];
+                                            }
+
+                                            return (
+                                                <ExerciseCard 
+                                                    key={ex.id} 
+                                                    exercise={adjustedEx} 
+                                                    onRestStart={handleRestStart}
+                                                    isSuperset={section.isSuperset}
+                                                    nextExerciseInfo={nextInfo}
+                                                    onLogSet={handleLogSet}
+                                                    logs={workoutLogs[ex.id]}
+                                                    lastConfig={lastConfigs[ex.id]}
+                                                />
+                                            );
+                                        })}
                                     </div>
                                 </>
                             )}
                         </div>
                     ))}
 
-                    {/* Finish Button */}
                     <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black via-black/90 to-transparent">
                         <button 
-                            onClick={onFinish}
-                            className="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-4 rounded-2xl shadow-lg shadow-orange-900/40 transform transition-all active:scale-95 flex items-center justify-center gap-2"
+                            onClick={() => onFinish(workoutLogs)}
+                            className="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-4 rounded-2xl shadow-lg shadow-orange-900/40 flex items-center justify-center gap-2"
                         >
                             <Award size={20} />
-                            Terminar Entrenamiento
+                            Analizar y Terminar
                         </button>
                     </div>
 
                     <TimerOverlay 
                         isOpen={timerState.isOpen} 
                         initialTime={timerState.duration}
+                        nextTip={timerState.nextTip}
                         onClose={() => setTimerState({...timerState, isOpen: false})} 
                     />
                 </div>
             );
         };
 
-        const HomeView = ({ onStart }) => {
-            const [history, setHistory] = useState([]);
-
-            useEffect(() => {
-                const saved = localStorage.getItem('anillas_history');
-                if (saved) setHistory(JSON.parse(saved));
-            }, []);
-
+        const HomeView = ({ onStart, currentWeek, isDeload, history }) => {
             return (
-                <div className="h-full flex flex-col">
-                    <div className="flex-1 flex flex-col justify-center items-center text-center p-6">
+                <div className="h-full flex flex-col p-6">
+                    <div className="flex-1 flex flex-col justify-center items-center text-center">
                         <div className="w-24 h-24 bg-gradient-to-br from-orange-600 to-amber-700 rounded-full flex items-center justify-center mb-6 shadow-2xl shadow-orange-900/50 ring-4 ring-black ring-opacity-50">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-12 h-12 text-white">
-                                <circle cx="12" cy="12" r="10"/>
-                                <circle cx="12" cy="12" r="4"/>
-                            </svg>
+                            <span className="text-3xl font-black text-white">{currentWeek}</span>
                         </div>
                         <h1 className="text-4xl font-black text-white mb-2 tracking-tight">ANILLOS</h1>
-                        <p className="text-orange-400 font-medium mb-8">Fase 1: Cimentación</p>
-
-                        <div className="w-full max-w-sm bg-zinc-800/50 rounded-2xl p-6 border border-zinc-700 backdrop-blur-sm mb-8">
-                            <div className="flex justify-between text-sm text-zinc-400 mb-4 border-b border-zinc-700 pb-2">
-                                <span>Programación</span>
-                                <span>Mar • Jue • Sáb</span>
+                        <p className="text-orange-400 font-medium mb-2">Semana Actual</p>
+                        
+                        {isDeload && (
+                            <div className="bg-purple-900/30 border border-purple-500/50 text-purple-200 px-4 py-2 rounded-lg text-sm mb-6 max-w-xs">
+                                📉 <strong>Semana de Descarga</strong><br/>
+                                El volumen se reducirá automáticamente a la mitad para recuperar tu sistema nervioso.
                             </div>
-                            <div className="text-left space-y-3">
-                                <div className="flex items-start gap-3">
-                                    <div className="bg-blue-900/50 p-1.5 rounded text-blue-400"><Clock size={16}/></div>
-                                    <div>
-                                        <h4 className="font-bold text-white text-sm">Tiempo</h4>
-                                        <p className="text-xs text-zinc-500">75-90 minutos</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-start gap-3">
-                                    <div className="bg-orange-900/50 p-1.5 rounded text-orange-400"><Award size={16}/></div>
-                                    <div>
-                                        <h4 className="font-bold text-white text-sm">Objetivo</h4>
-                                        <p className="text-xs text-zinc-500">Preparar tendones y articulaciones</p>
-                                    </div>
-                                </div>
+                        )}
+
+                        <div className="w-full max-w-sm bg-zinc-800/50 rounded-2xl p-6 border border-zinc-700 backdrop-blur-sm mb-8 text-left">
+                            <div className="flex justify-between items-center mb-4">
+                                <span className="text-zinc-400 text-sm font-bold uppercase">Progreso Fase 1</span>
+                                <span className="text-white font-mono">{currentWeek}/16</span>
+                            </div>
+                            <div className="h-2 bg-zinc-700 rounded-full overflow-hidden">
+                                <div className="h-full bg-orange-500" style={{width: `${(currentWeek/16)*100}%`}}></div>
                             </div>
                         </div>
 
@@ -492,50 +734,43 @@
                             EMPEZAR SESIÓN
                         </button>
                     </div>
-
-                    <div className="p-6">
-                        <h3 className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-3">Historial Reciente</h3>
-                        <div className="flex gap-2 overflow-x-auto pb-2">
-                            {history.length === 0 ? (
-                                <div className="text-zinc-600 text-sm italic w-full text-center py-4 border border-dashed border-zinc-800 rounded-lg">
-                                    Aún no hay registros. ¡A entrenar!
-                                </div>
-                            ) : (
-                                history.slice(0,5).map((log, i) => (
-                                    <div key={i} className="bg-zinc-800 min-w-[100px] p-3 rounded-lg border border-zinc-700">
-                                        <div className="text-orange-400 font-bold text-lg">{new Date(log.date).getDate()}</div>
-                                        <div className="text-zinc-500 text-xs">{new Date(log.date).toLocaleString('default', { month: 'short' })}</div>
-                                        <div className="text-green-500 text-xs mt-1">✓ Hecho</div>
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                    </div>
                 </div>
             );
         };
 
-        const FinishScreen = ({ onHome }) => {
+        const FinishScreen = ({ onHome, analysis }) => {
             return (
-                <div className="h-screen flex flex-col items-center justify-center p-8 text-center bg-gradient-to-b from-zinc-900 to-black">
-                    <div className="mb-6 animate-bounce">
-                        <Award size={64} className="text-orange-500 mx-auto" />
+                <div className="min-h-screen flex flex-col p-6 bg-zinc-950 overflow-y-auto">
+                    <div className="text-center mb-8 pt-8">
+                        <Award size={64} className="text-orange-500 mx-auto mb-4 animate-bounce" />
+                        <h2 className="text-3xl font-bold text-white">¡Sesión Analizada!</h2>
+                        <p className="text-zinc-400">El Cerebro de la App ha hablado:</p>
                     </div>
-                    <h2 className="text-3xl font-bold text-white mb-4">¡Sesión Completada!</h2>
-                    <p className="text-zinc-400 mb-8 max-w-xs mx-auto">
-                        Gran trabajo cimentando esa base. Recuerda comer proteína (1.6g/kg) y descansar 48h.
-                    </p>
-                    
-                    <div className="bg-zinc-800 p-6 rounded-xl border border-zinc-700 w-full max-w-sm mb-8">
-                        <h3 className="text-white font-bold mb-2">Consejo del Chef 👨‍🍳</h3>
-                        <p className="text-zinc-400 text-sm italic">
-                            "La paciencia es el ingrediente secreto. No intentes el Muscle-up todavía. La consistencia gana a la intensidad."
-                        </p>
+
+                    <div className="space-y-4 max-w-md mx-auto w-full mb-8">
+                        {analysis.map((item, idx) => (
+                            <div key={idx} className="bg-zinc-900 p-4 rounded-xl border border-zinc-800">
+                                <h4 className="text-white font-bold text-lg mb-1">{item.name}</h4>
+                                <div className={`text-xs uppercase font-bold tracking-wider mb-2 ${
+                                    item.verdict === 'promote' ? 'text-green-400' :
+                                    item.verdict === 'maintain' ? 'text-blue-400' : 'text-orange-400'
+                                }`}>
+                                    {item.verdict === 'promote' ? '🚀 SUBIR NIVEL' : 
+                                     item.verdict === 'maintain' ? '🔄 MANTENER/PULIR' : '🛠 AJUSTAR CARGA'}
+                                </div>
+                                <p className="text-zinc-300 text-sm leading-relaxed">{item.message}</p>
+                                {item.config && (
+                                    <div className="mt-2 p-2 bg-zinc-950 rounded border border-zinc-800 text-xs text-zinc-500">
+                                        Config usada: {item.config}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
                     </div>
 
                     <button 
                         onClick={onHome}
-                        className="bg-zinc-700 hover:bg-zinc-600 text-white px-8 py-3 rounded-xl font-bold transition-colors"
+                        className="bg-white text-black w-full max-w-md mx-auto py-4 rounded-xl font-bold hover:bg-zinc-200"
                     >
                         Volver al Inicio
                     </button>
@@ -545,19 +780,99 @@
 
         const App = () => {
             const [view, setView] = useState('home');
+            const [history, setHistory] = useState([]);
+            const [lastConfigs, setLastConfigs] = useState({});
+            const [analysis, setAnalysis] = useState([]);
+
+            // Load Data
+            useEffect(() => {
+                const savedHistory = JSON.parse(localStorage.getItem('anillas_history') || '[]');
+                const savedConfigs = JSON.parse(localStorage.getItem('anillas_configs') || '{}');
+                setHistory(savedHistory);
+                setLastConfigs(savedConfigs);
+            }, []);
+
+            // Stats Calculation
+            const totalSessions = history.length;
+            // Schedule is 3 times a week. Week = floor(sessions / 3) + 1
+            const currentWeek = Math.floor(totalSessions / 3) + 1;
+            const isDeload = currentWeek % 5 === 0;
 
             const startWorkout = () => setView('workout');
             
-            const finishWorkout = () => {
-                const newLog = { date: new Date().toISOString(), completed: true };
-                const history = JSON.parse(localStorage.getItem('anillas_history') || '[]');
-                localStorage.setItem('anillas_history', JSON.stringify([newLog, ...history]));
+            const finishWorkout = (logs) => {
+                const newDate = new Date().toISOString();
+                
+                // 1. Save History
+                const newHistory = [{ date: newDate, week: currentWeek, logs }, ...history];
+                localStorage.setItem('anillas_history', JSON.stringify(newHistory));
+                setHistory(newHistory);
+
+                // 2. Update Configs
+                const newConfigs = { ...lastConfigs };
+                const sessionAnalysis = [];
+
+                // 3. Analyze Progression (Algorithm)
+                ROUTINE.sections.forEach(sec => {
+                    if (sec.exercises) {
+                        sec.exercises.forEach(ex => {
+                            const exLogs = logs[ex.id];
+                            if (!exLogs || exLogs.length === 0) return;
+
+                            // Save last config
+                            const lastLog = exLogs[exLogs.length - 1];
+                            if (lastLog?.config) newConfigs[ex.id] = lastLog.config;
+
+                            // ALGORITHM
+                            let message = "";
+                            let verdict = "maintain";
+                            const minReps = parseInt(ex.range.split('-')[0]);
+                            const maxReps = parseInt(ex.range.split('-')[1]);
+                            
+                            // Check average reps and quality
+                            const allPerfect = exLogs.every(l => !l.qualityFailed);
+                            const hitMax = exLogs.every(l => l.reps >= maxReps);
+                            const hitMin = exLogs.every(l => l.reps >= minReps);
+
+                            if (hitMax && allPerfect) {
+                                verdict = "promote";
+                                message = ex.type === 'time' 
+                                    ? `¡30s perfectos! Próxima vez: Gira más las muñecas (RTO) o separa las anillas.` 
+                                    : `¡Te pasaste el juego! Próxima vez: Haz el ejercicio más difícil (baja anillas/sube pies) y reinicia en ${minReps} reps.`;
+                            } else if (hitMin) {
+                                verdict = "maintain";
+                                message = `Estás en el camino. Objetivo próxima sesión: Sumar 1 rep total o mejorar la calidad técnica.`;
+                            } else {
+                                verdict = "regress";
+                                message = `No llegaste al mínimo (${minReps}) o falló la técnica. Facilita la configuración (sube anillas) para ganar volumen de calidad.`;
+                            }
+
+                            sessionAnalysis.push({
+                                name: ex.name,
+                                verdict,
+                                message,
+                                config: lastLog?.config
+                            });
+                        });
+                    }
+                });
+
+                localStorage.setItem('anillas_configs', JSON.stringify(newConfigs));
+                setLastConfigs(newConfigs);
+                setAnalysis(sessionAnalysis);
                 setView('finish');
             };
 
             return (
                 <div className="min-h-screen max-w-md mx-auto bg-black border-x border-zinc-900 shadow-2xl relative">
-                    {view === 'home' && <HomeView onStart={startWorkout} />}
+                    {view === 'home' && (
+                        <HomeView 
+                            onStart={startWorkout} 
+                            currentWeek={currentWeek} 
+                            isDeload={isDeload}
+                            history={history}
+                        />
+                    )}
                     {view === 'workout' && (
                         <div className="p-4 pt-6 animate-fade-in">
                             <button 
@@ -566,10 +881,20 @@
                             >
                                 <RotateCcw size={14} /> Cancelar
                             </button>
-                            <WorkoutView onFinish={finishWorkout} />
+                            <WorkoutView 
+                                onFinish={finishWorkout} 
+                                currentWeek={currentWeek} 
+                                isDeload={isDeload}
+                                lastConfigs={lastConfigs}
+                            />
                         </div>
                     )}
-                    {view === 'finish' && <FinishScreen onHome={() => setView('home')} />}
+                    {view === 'finish' && (
+                        <FinishScreen 
+                            onHome={() => setView('home')} 
+                            analysis={analysis}
+                        />
+                    )}
                 </div>
             );
         };
