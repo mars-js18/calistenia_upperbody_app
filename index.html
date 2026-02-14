@@ -83,6 +83,7 @@
         const Activity = (props) => <Icon {...props}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></Icon>;
         const Settings = (props) => <Icon {...props}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></Icon>;
         const AlertTriangle = (props) => <Icon {...props}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></Icon>;
+        const Shield = (props) => <Icon {...props}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></Icon>;
 
         // --- Audio Helper ---
         const playTimerFinishedSound = () => {
@@ -118,6 +119,23 @@
                         { name: "Rotaciones Articulares", desc: "Muñecas, hombros y cuello. Suave y controlado.", duration: "2 min" },
                         { name: "Activación (Jumping Jacks)", desc: "Saltos de tijera o trote para elevar temperatura.", duration: "3 min" },
                         { name: "Preparación Específica", desc: "1 serie de remos y flexiones al 50% de intensidad.", duration: "5 min" }
+                    ],
+                    exercises: [
+                        {
+                            id: "scap_activation",
+                            name: "ACTIVACIÓN ESCAPULAR",
+                            sets: 1,
+                            reps: "5-8",
+                            rest: 0,
+                            type: "reps",
+                            range: "5-8",
+                            rangeUnit: "reps",
+                            notes: "Activación Rápida. NO te canses.",
+                            why: "Preparación Neural del hombro.",
+                            recipe: "1. Cuelga con los brazos muertos.\n2. Sube y baja los hombros rítmicamente.\n3. Solo 'despierta' la zona.",
+                            progressionTip: "🚫 NO aplicar sobrecarga progresiva.\nHazlo suave. Si te cansas, haz menos.",
+                            validationRules: ["locked_elbows"]
+                        }
                     ]
                 },
                 {
@@ -237,18 +255,19 @@
                             progressionTip: "📊 REPS (12-15): Sin impulso."
                         },
                         {
-                            id: "prehab1",
-                            name: "Scapular Pull-ups",
-                            sets: 2,
-                            reps: "12-15",
+                            id: "scap_builder",
+                            name: "SCAP BUILDER (Blindaje)",
+                            sets: 3,
+                            reps: "10-12",
                             rest: 60,
                             type: "reps",
-                            range: "12-15",
+                            range: "10-12",
                             rangeUnit: "reps",
-                            notes: "Solo hombros.",
-                            why: "Prevención.",
-                            recipe: "1. Brazos rectos.\n2. Sube y baja hombros.\n3. Codos bloqueados.",
-                            progressionTip: "📊 REPS (12-15): Rango corto, máxima activación."
+                            notes: "Pausa 1s arriba. Codos Bloqueados.",
+                            why: "Hipertrofia Estructural / Prevención.",
+                            recipe: "1. Brazos totalmente rectos.\n2. Sube explosivo.\n3. PAUSA 1 SEGUNDO ARRIBA.\n4. Baja controlado en 2 seg.",
+                            progressionTip: "🏗 SOBRECARGA: Solo sube repeticiones o lastre si dominas la pausa de 1s con técnica perfecta.",
+                            validationRules: ["locked_elbows", "isometric_pause"]
                         }
                     ]
                 }
@@ -368,6 +387,12 @@
             const [qualityFailed, setQualityFailed] = useState(false);
             const [rir, setRir] = useState(null); // 0, 1, 2
             const [showStopwatch, setShowStopwatch] = useState(false);
+            
+            // New validation states
+            const hasElbowRule = exercise.validationRules?.includes('locked_elbows');
+            const hasPauseRule = exercise.validationRules?.includes('isometric_pause');
+            const [elbowsLocked, setElbowsLocked] = useState(true);
+            const [pauseHeld, setPauseHeld] = useState(true);
 
             useEffect(() => {
                 if (isOpen) {
@@ -375,6 +400,8 @@
                     setConfig(initialData?.config || lastConfig || '');
                     setQualityFailed(initialData?.qualityFailed || false);
                     setRir(initialData?.rir || null);
+                    setElbowsLocked(true);
+                    setPauseHeld(true);
                 }
             }, [isOpen, initialData, lastConfig]);
 
@@ -382,10 +409,21 @@
 
             const handleSave = () => {
                 if (!reps) return;
+                
+                // Logic to force quality fail if specific rules are broken
+                let finalQualityFailed = qualityFailed;
+                if (hasElbowRule && !elbowsLocked) finalQualityFailed = true;
+                if (hasPauseRule && !pauseHeld) finalQualityFailed = true;
+
+                // Logic for Activation warning
+                if (exercise.id === 'scap_activation' && rir === 0) {
+                    alert("¡Cuidado! La activación no debe llegar al fallo. Guarda energía.");
+                }
+
                 onSave({
                     reps: parseInt(reps),
                     config,
-                    qualityFailed,
+                    qualityFailed: finalQualityFailed,
                     rir
                 });
                 onClose();
@@ -398,8 +436,8 @@
             return (
                 <>
                 <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/95 backdrop-blur-sm p-4 modal-enter">
-                    <div className="bg-zinc-900 w-full max-w-sm rounded-2xl border border-zinc-700 shadow-2xl overflow-hidden">
-                        <div className="bg-zinc-800 p-4 border-b border-zinc-700 flex justify-between items-center">
+                    <div className="bg-zinc-900 w-full max-w-sm rounded-2xl border border-zinc-700 shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto custom-scrollbar">
+                        <div className="bg-zinc-800 p-4 border-b border-zinc-700 flex justify-between items-center sticky top-0 z-10">
                             <h3 className="font-bold text-white">Registro Serie {setIndex + 1}</h3>
                             <button onClick={onClose} className="text-zinc-400 hover:text-white">✕</button>
                         </div>
@@ -429,31 +467,38 @@
                                         </button>
                                     )}
                                 </div>
-                                <p className="text-[10px] text-zinc-500 mt-1">
-                                    {exercise.type === 'time' 
-                                        ? "Segundos totales con buena técnica. Para al temblar." 
-                                        : "Número de repeticiones completas sin impulso."}
-                                </p>
                             </div>
 
-                            {/* 2. Configuración Mecánica */}
-                            <div>
-                                <label className="block text-xs font-bold text-zinc-400 uppercase mb-2 flex items-center gap-1">
-                                    <Settings size={12}/> Configuración Mecánica
-                                </label>
-                                <input 
-                                    type="text" 
-                                    value={config}
-                                    onChange={(e) => setConfig(e.target.value)}
-                                    placeholder="Ej: Anillas a la rodilla, Pies elevados..."
-                                    className="w-full bg-zinc-950 border border-zinc-700 rounded-xl p-3 text-sm text-white focus:border-blue-500 outline-none"
-                                />
-                                <p className="text-[10px] text-zinc-500 mt-1">Anota variaciones (ej: 'Pies en banco') para medir tu progreso real.</p>
-                            </div>
+                            {/* Scapular Rules Validation */}
+                            {(hasElbowRule || hasPauseRule) && (
+                                <div className="bg-blue-900/20 p-3 rounded-xl border border-blue-900/50 space-y-4">
+                                    {hasElbowRule && (
+                                        <div>
+                                            <label className="block text-xs font-bold text-blue-300 uppercase mb-2">Regla de los Codos</label>
+                                            <p className="text-xs text-zinc-400 mb-2">¿Mantuviste los brazos TOTALMENTE rectos?</p>
+                                            <div className="flex gap-2">
+                                                <button onClick={() => setElbowsLocked(true)} className={`flex-1 py-2 text-xs rounded-lg border ${elbowsLocked ? 'bg-blue-600 text-white border-blue-500' : 'bg-zinc-900 text-zinc-500 border-zinc-700'}`}>Sí (Bloqueados)</button>
+                                                <button onClick={() => setElbowsLocked(false)} className={`flex-1 py-2 text-xs rounded-lg border ${!elbowsLocked ? 'bg-red-600 text-white border-red-500' : 'bg-zinc-900 text-zinc-500 border-zinc-700'}`}>No (Doblados)</button>
+                                            </div>
+                                            {!elbowsLocked && <p className="text-[10px] text-red-400 mt-1 italic">⚠️ Si doblas codos, usas bíceps. No cuenta.</p>}
+                                        </div>
+                                    )}
+                                    {hasPauseRule && (
+                                        <div className="pt-3 border-t border-blue-900/30">
+                                            <label className="block text-xs font-bold text-blue-300 uppercase mb-2">Pausa Isométrica</label>
+                                            <p className="text-xs text-zinc-400 mb-2">¿Hiciste la pausa de 1 seg arriba en CADA rep?</p>
+                                            <div className="flex gap-2">
+                                                <button onClick={() => setPauseHeld(true)} className={`flex-1 py-2 text-xs rounded-lg border ${pauseHeld ? 'bg-blue-600 text-white border-blue-500' : 'bg-zinc-900 text-zinc-500 border-zinc-700'}`}>Sí</button>
+                                                <button onClick={() => setPauseHeld(false)} className={`flex-1 py-2 text-xs rounded-lg border ${!pauseHeld ? 'bg-red-600 text-white border-red-500' : 'bg-zinc-900 text-zinc-500 border-zinc-700'}`}>No</button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
 
                             {/* 3. Calidad (Fallo Técnico) */}
                             <div>
-                                <label className="block text-xs font-bold text-zinc-400 uppercase mb-2">Calidad Técnica</label>
+                                <label className="block text-xs font-bold text-zinc-400 uppercase mb-2">Calidad General</label>
                                 <div className="grid grid-cols-2 gap-2">
                                     <button 
                                         onClick={() => setQualityFailed(false)}
@@ -468,16 +513,6 @@
                                         ⚠️ Fallo Técnico
                                     </button>
                                 </div>
-                                {qualityFailed ? (
-                                    <div className="mt-2 p-2 bg-red-900/20 border border-red-900/50 rounded-lg flex gap-2 items-start">
-                                        <AlertTriangle size={14} className="text-red-500 shrink-0 mt-0.5"/>
-                                        <p className="text-xs text-red-300">
-                                            <strong>Tope Real:</strong> No subas reps/tiempo la próxima vez. Prioriza la forma.
-                                        </p>
-                                    </div>
-                                ) : (
-                                    <p className="text-[10px] text-zinc-500 mt-1">Marca "Fallo" si rompiste la forma, temblaste o usaste impulso.</p>
-                                )}
                             </div>
 
                             {/* 4. Esfuerzo (RIR) */}
@@ -494,7 +529,6 @@
                                         </button>
                                     ))}
                                 </div>
-                                <p className="text-[10px] text-zinc-500 mt-1">¿Cuántas más podrías haber hecho con buena técnica?</p>
                             </div>
 
                             <button 
@@ -627,12 +661,14 @@
             const handleSaveLog = (data) => {
                 onLogSet(exercise.id, activeSetIdx, data);
                 
-                // Trigger Timer
-                let tip = nextExerciseInfo;
-                if (activeSetIdx + 1 === exercise.sets && exercise.lastSetTip) {
-                    tip = { name: exercise.lastSetTip.title, recipe: "", progressionTip: exercise.lastSetTip.text };
+                // Trigger Timer if rest > 0
+                if (exercise.rest > 0) {
+                    let tip = nextExerciseInfo;
+                    if (activeSetIdx + 1 === exercise.sets && exercise.lastSetTip) {
+                        tip = { name: exercise.lastSetTip.title, recipe: "", progressionTip: exercise.lastSetTip.text };
+                    }
+                    onRestStart(exercise.rest, tip);
                 }
-                onRestStart(exercise.rest, tip);
             };
 
             return (
@@ -713,8 +749,14 @@
             );
         };
 
-        const WarmupSection = ({ section }) => {
+        const WarmupSection = ({ section, onLogSet, logs }) => {
             const [done, setDone] = useState(false);
+            
+            // Function to handle log from Activation exercise
+            const handleLogActivation = (exId, setIdx, data) => {
+                if(onLogSet) onLogSet(exId, setIdx, data);
+            };
+
             return (
                 <div className="mb-8">
                     <div className={`p-4 rounded-xl bg-gradient-to-br from-blue-900 to-slate-800 border border-blue-700 mb-4`}>
@@ -734,7 +776,28 @@
                                 </div>
                             </div>
                         ))}
-                        <button onClick={() => setDone(!done)} className={`w-full mt-2 py-3 rounded-lg font-bold transition-colors ${done ? 'bg-green-600 text-white' : 'bg-zinc-700 text-zinc-300'}`}>
+                        
+                        {/* New Scapular Activation Entity */}
+                        {section.exercises && (
+                            <div className="mt-6 pt-4 border-t border-zinc-700">
+                                <h4 className="text-blue-300 font-bold text-xs uppercase tracking-wider mb-3 flex items-center gap-2">
+                                    <Shield size={14}/> Activación Neural (Obligatorio)
+                                </h4>
+                                {section.exercises.map(ex => (
+                                    <ExerciseCard 
+                                        key={ex.id}
+                                        exercise={ex}
+                                        onRestStart={() => {}} // No timer needed for activation
+                                        isSuperset={false}
+                                        onLogSet={handleLogActivation}
+                                        logs={logs ? logs[ex.id] : []}
+                                        lastConfig={null}
+                                    />
+                                ))}
+                            </div>
+                        )}
+
+                        <button onClick={() => setDone(!done)} className={`w-full mt-4 py-3 rounded-lg font-bold transition-colors ${done ? 'bg-green-600 text-white' : 'bg-zinc-700 text-zinc-300'}`}>
                             {done ? "Calentamiento Completado ✓" : "Marcar como hecho"}
                         </button>
                     </div>
@@ -779,7 +842,11 @@
                     {ROUTINE.sections.map((section) => (
                         <div key={section.id} className="mb-8">
                             {section.id === 'warmup' ? (
-                                <WarmupSection section={section} />
+                                <WarmupSection 
+                                    section={section} 
+                                    onLogSet={handleLogSet}
+                                    logs={workoutLogs}
+                                />
                             ) : (
                                 <>
                                     <div className="flex items-center gap-3 mb-3">
