@@ -47,6 +47,13 @@
             from { opacity: 0; transform: scale(0.95); }
             to { opacity: 1; transform: scale(1); }
         }
+        .pulse-text {
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
     </style>
 </head>
 <body>
@@ -108,9 +115,9 @@
                     subtitle: "10 Minutos • Movilidad",
                     color: "bg-blue-900",
                     items: [
-                        { name: "Rotaciones Articulares", desc: "Muñecas, hombros y cuello.", duration: "2 min" },
-                        { name: "Activación", desc: "Trote suave o Jumping Jacks.", duration: "3 min" },
-                        { name: "Preparación Específica", desc: "1 serie suave de remos y flexiones.", duration: "5 min" }
+                        { name: "Rotaciones Articulares", desc: "Muñecas, hombros y cuello. Suave y controlado.", duration: "2 min" },
+                        { name: "Activación (Jumping Jacks)", desc: "Saltos de tijera o trote para elevar temperatura.", duration: "3 min" },
+                        { name: "Preparación Específica", desc: "1 serie de remos y flexiones al 50% de intensidad.", duration: "5 min" }
                     ]
                 },
                 {
@@ -250,12 +257,117 @@
 
         // --- COMPONENTS ---
 
+        // Stopwatch Modal
+        const StopwatchModal = ({ isOpen, onClose, exercise, onTimeCaptured }) => {
+            const [status, setStatus] = useState('idle'); // idle, prep, running
+            const [time, setTime] = useState(0);
+            const [prepTime, setPrepTime] = useState(2);
+            
+            useEffect(() => {
+                let interval = null;
+                if (isOpen && status === 'prep') {
+                    interval = setInterval(() => {
+                        setPrepTime((prev) => {
+                            if (prev <= 1) {
+                                setStatus('running');
+                                setTime(0);
+                                return 0;
+                            }
+                            return prev - 1;
+                        });
+                    }, 1000);
+                } else if (isOpen && status === 'running') {
+                    interval = setInterval(() => {
+                        setTime(t => t + 1);
+                    }, 1000);
+                }
+                return () => clearInterval(interval);
+            }, [isOpen, status]);
+
+            // Reset on open
+            useEffect(() => {
+                if (isOpen) {
+                    setStatus('idle');
+                    setTime(0);
+                    setPrepTime(2);
+                }
+            }, [isOpen]);
+
+            if (!isOpen) return null;
+
+            const handleStop = () => {
+                setStatus('idle');
+                onTimeCaptured(time);
+                onClose();
+            };
+
+            return (
+                <div className="fixed inset-0 z-[70] flex flex-col bg-zinc-950 p-6 modal-enter">
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-xl font-bold text-white">Cronómetro</h3>
+                        <button onClick={onClose} className="text-zinc-400 p-2">✕</button>
+                    </div>
+
+                    <div className="flex-1 flex flex-col items-center justify-center">
+                        <h4 className="text-orange-400 font-bold text-xl mb-4">{exercise.name}</h4>
+                        
+                        {status === 'idle' && (
+                            <div className="text-center">
+                                <div className="text-6xl font-mono text-zinc-700 mb-8">00:00</div>
+                                <button 
+                                    onClick={() => setStatus('prep')}
+                                    className="bg-green-600 hover:bg-green-500 text-white rounded-full w-24 h-24 flex items-center justify-center shadow-lg transform transition-transform active:scale-95"
+                                >
+                                    <Play size={40} fill="currentColor" className="ml-1"/>
+                                </button>
+                                <p className="text-zinc-500 mt-4 text-sm">Pulsa para iniciar (2s prep)</p>
+                            </div>
+                        )}
+
+                        {status === 'prep' && (
+                            <div className="text-center">
+                                <div className="text-9xl font-black text-orange-500 pulse-text">{prepTime}</div>
+                                <p className="text-white font-bold mt-4 text-xl">¡Prepárate!</p>
+                            </div>
+                        )}
+
+                        {status === 'running' && (
+                            <div className="text-center w-full">
+                                <div className="text-8xl font-mono font-bold text-white mb-12 tabular-nums">
+                                    00:{time.toString().padStart(2, '0')}
+                                </div>
+                                <button 
+                                    onClick={handleStop}
+                                    className="bg-red-600 hover:bg-red-500 text-white font-bold py-6 px-12 rounded-2xl w-full max-w-xs shadow-lg flex items-center justify-center gap-3 text-xl"
+                                >
+                                    <Pause size={24} fill="currentColor"/> PARAR Y GUARDAR
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Instructions visible always */}
+                        <div className="mt-8 bg-zinc-900 p-4 rounded-xl border border-zinc-800 w-full max-w-sm">
+                            <h5 className="text-zinc-400 text-xs font-bold uppercase mb-2 flex items-center gap-2">
+                                <BookOpen size={14}/> Instrucciones Rápidas
+                            </h5>
+                            <div className="text-sm text-zinc-300 space-y-1">
+                                {exercise.recipe.split('\n').map((l, i) => (
+                                    <p key={i}>{l.replace(/^\d+\.\s/, '• ')}</p>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
         // Logger Modal for Reps/Config/Quality
         const LoggerModal = ({ isOpen, onClose, exercise, setIndex, onSave, initialData, lastConfig }) => {
             const [reps, setReps] = useState('');
             const [config, setConfig] = useState(lastConfig || '');
             const [qualityFailed, setQualityFailed] = useState(false);
             const [rir, setRir] = useState(null); // 0, 1, 2
+            const [showStopwatch, setShowStopwatch] = useState(false);
 
             useEffect(() => {
                 if (isOpen) {
@@ -279,7 +391,12 @@
                 onClose();
             };
 
+            const handleTimeCaptured = (capturedTime) => {
+                setReps(capturedTime);
+            };
+
             return (
+                <>
                 <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/95 backdrop-blur-sm p-4 modal-enter">
                     <div className="bg-zinc-900 w-full max-w-sm rounded-2xl border border-zinc-700 shadow-2xl overflow-hidden">
                         <div className="bg-zinc-800 p-4 border-b border-zinc-700 flex justify-between items-center">
@@ -293,14 +410,30 @@
                                 <label className="block text-xs font-bold text-zinc-400 uppercase mb-2">
                                     {exercise.type === 'time' ? 'Tiempo (Segundos)' : 'Repeticiones'}
                                 </label>
-                                <input 
-                                    type="number" 
-                                    value={reps}
-                                    onChange={(e) => setReps(e.target.value)}
-                                    placeholder={exercise.type === 'time' ? "Ej: 25" : "Ej: 10"}
-                                    className="w-full bg-zinc-950 border border-zinc-700 rounded-xl p-3 text-white text-lg focus:border-orange-500 outline-none"
-                                    autoFocus
-                                />
+                                <div className="flex gap-2">
+                                    <input 
+                                        type="number" 
+                                        value={reps}
+                                        onChange={(e) => setReps(e.target.value)}
+                                        placeholder={exercise.type === 'time' ? "Ej: 25" : "Ej: 10"}
+                                        className="w-full bg-zinc-950 border border-zinc-700 rounded-xl p-3 text-white text-lg focus:border-orange-500 outline-none"
+                                        autoFocus={exercise.type !== 'time'}
+                                    />
+                                    {exercise.type === 'time' && (
+                                        <button 
+                                            onClick={() => setShowStopwatch(true)}
+                                            className="bg-emerald-900/30 border border-emerald-500/50 text-emerald-400 rounded-xl px-3 flex flex-col items-center justify-center min-w-[80px] hover:bg-emerald-900/50 transition-colors"
+                                        >
+                                            <Clock size={20}/>
+                                            <span className="text-[10px] font-bold mt-1">Cronómetro</span>
+                                        </button>
+                                    )}
+                                </div>
+                                <p className="text-[10px] text-zinc-500 mt-1">
+                                    {exercise.type === 'time' 
+                                        ? "Segundos totales con buena técnica. Para al temblar." 
+                                        : "Número de repeticiones completas sin impulso."}
+                                </p>
                             </div>
 
                             {/* 2. Configuración Mecánica */}
@@ -315,7 +448,7 @@
                                     placeholder="Ej: Anillas a la rodilla, Pies elevados..."
                                     className="w-full bg-zinc-950 border border-zinc-700 rounded-xl p-3 text-sm text-white focus:border-blue-500 outline-none"
                                 />
-                                <p className="text-[10px] text-zinc-500 mt-1">Lo recordaremos para la próxima vez.</p>
+                                <p className="text-[10px] text-zinc-500 mt-1">Anota variaciones (ej: 'Pies en banco') para medir tu progreso real.</p>
                             </div>
 
                             {/* 3. Calidad (Fallo Técnico) */}
@@ -335,19 +468,21 @@
                                         ⚠️ Fallo Técnico
                                     </button>
                                 </div>
-                                {qualityFailed && (
+                                {qualityFailed ? (
                                     <div className="mt-2 p-2 bg-red-900/20 border border-red-900/50 rounded-lg flex gap-2 items-start">
                                         <AlertTriangle size={14} className="text-red-500 shrink-0 mt-0.5"/>
                                         <p className="text-xs text-red-300">
-                                            <strong>¡Detente!</strong> Este es tu "Tope Real". No subas reps la próxima vez, mejora la calidad.
+                                            <strong>Tope Real:</strong> No subas reps/tiempo la próxima vez. Prioriza la forma.
                                         </p>
                                     </div>
+                                ) : (
+                                    <p className="text-[10px] text-zinc-500 mt-1">Marca "Fallo" si rompiste la forma, temblaste o usaste impulso.</p>
                                 )}
                             </div>
 
                             {/* 4. Esfuerzo (RIR) */}
                             <div>
-                                <label className="block text-xs font-bold text-zinc-400 uppercase mb-2">¿Podrías hacer otra bien hecha?</label>
+                                <label className="block text-xs font-bold text-zinc-400 uppercase mb-2">RIR (Reps en Reserva)</label>
                                 <div className="flex gap-2">
                                     {[0, 1, 2].map((val) => (
                                         <button 
@@ -355,10 +490,11 @@
                                             onClick={() => setRir(val)}
                                             className={`flex-1 p-2 rounded-lg border text-xs transition-colors ${rir === val ? 'bg-blue-900/30 border-blue-500 text-blue-400' : 'bg-zinc-950 border-zinc-800 text-zinc-500'}`}
                                         >
-                                            {val === 0 ? "No (Límite)" : val === 1 ? "Quizás 1" : "Sí, >2"}
+                                            {val === 0 ? "0 (Límite)" : val === 1 ? "1 (Quizás)" : "2+ (Fácil)"}
                                         </button>
                                     ))}
                                 </div>
+                                <p className="text-[10px] text-zinc-500 mt-1">¿Cuántas más podrías haber hecho con buena técnica?</p>
                             </div>
 
                             <button 
@@ -371,6 +507,14 @@
                         </div>
                     </div>
                 </div>
+                
+                <StopwatchModal 
+                    isOpen={showStopwatch} 
+                    onClose={() => setShowStopwatch(false)}
+                    exercise={exercise}
+                    onTimeCaptured={handleTimeCaptured}
+                />
+                </>
             );
         };
 
@@ -579,10 +723,13 @@
                     </div>
                     <div className="bg-zinc-800 rounded-xl p-4 border border-zinc-700">
                         {section.items.map((item, idx) => (
-                            <div key={idx} className="flex gap-3 mb-4 last:mb-0 pb-3 border-b border-zinc-700 last:border-0 last:pb-0">
+                            <div key={idx} className="flex gap-3 mb-4 last:mb-0 pb-3 border-b border-zinc-700 last:border-0 last:pb-0 items-start">
                                 <div className="mt-1 h-2 w-2 rounded-full bg-blue-500 shrink-0"></div>
-                                <div>
-                                    <h4 className="font-medium text-white">{item.name}</h4>
+                                <div className="flex-1">
+                                    <h4 className="font-medium text-white flex justify-between">
+                                        {item.name}
+                                        <span className="text-blue-400 font-mono text-sm">{item.duration}</span>
+                                    </h4>
                                     <p className="text-sm text-zinc-400">{item.desc}</p>
                                 </div>
                             </div>
