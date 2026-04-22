@@ -101,11 +101,11 @@
         <!-- VISTA: CRONÓMETRO -->
         <section id="view-timer" class="tab-content active flex flex-col items-center justify-center h-full">
             
-            <div class="bg-slate-800 p-4 rounded-2xl shadow-lg w-full max-w-sm mb-6 flex flex-col items-center border border-slate-700">
+            <div class="bg-slate-800 p-4 rounded-2xl shadow-lg w-full max-w-sm mb-6 flex flex-col items-center border border-slate-700 transition-colors duration-300" id="targetContainer">
                 <label class="text-slate-400 text-sm mb-2 font-semibold">Objetivo (Segundos)</label>
                 <div class="flex items-center gap-2 text-2xl">
                     <button onclick="adjustTarget(-5)" class="w-10 h-10 rounded-full bg-slate-700 text-emerald-400 hover:bg-slate-600 active:scale-95 transition flex items-center justify-center"><i class="fa-solid fa-minus"></i></button>
-                    <input type="number" id="inputTarget" value="60" class="w-24 bg-transparent text-center font-bold text-white outline-none border-b-2 border-emerald-500 focus:border-emerald-300">
+                    <input type="number" id="inputTarget" value="30" class="w-24 bg-transparent text-center font-bold text-white outline-none border-b-2 border-emerald-500 focus:border-emerald-300 transition-colors">
                     <button onclick="adjustTarget(5)" class="w-10 h-10 rounded-full bg-slate-700 text-emerald-400 hover:bg-slate-600 active:scale-95 transition flex items-center justify-center"><i class="fa-solid fa-plus"></i></button>
                 </div>
                 <p class="text-xs text-slate-500 mt-2 text-center">Sonará la alarma fuerte y vibrará al llegar.</p>
@@ -137,6 +137,74 @@
             <!-- Mensaje temporal -->
             <p id="saveMsg" class="mt-4 text-emerald-400 font-semibold opacity-0 transition-opacity duration-300">¡Sesión guardada!</p>
 
+        </section>
+
+        <!-- VISTA: RUTINA -->
+        <section id="view-routine" class="tab-content h-full">
+            <h2 class="text-2xl font-bold mb-4 text-emerald-400"><i class="fa-solid fa-list-check mr-2"></i>Tu Rutina</h2>
+            <div class="space-y-4 pb-4">
+                
+                <!-- Fase 1 -->
+                <div class="bg-slate-800 rounded-2xl p-5 shadow-lg border border-slate-700">
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="font-bold text-lg text-white">Fase 1: Base</h3>
+                        <span class="bg-slate-700 text-xs px-2 py-1 rounded font-semibold text-slate-300">Semanas 1-2</span>
+                    </div>
+                    <p class="text-sm text-slate-400 mb-3">Suspensión con apoyo. Descarga el 20-30% de tu peso apoyando las puntas de los pies en el suelo o un cajón/silla.</p>
+                    <div class="flex gap-4 text-sm text-slate-300 mb-4">
+                        <div><i class="fa-solid fa-calendar-days text-emerald-500 mr-1"></i> 3-4 días/sem</div>
+                        <div><i class="fa-solid fa-rotate-right text-emerald-500 mr-1"></i> 3 series</div>
+                    </div>
+                    <button onclick="setTimerFromRoutine(30)" class="w-full bg-slate-700 hover:bg-slate-600 text-emerald-400 py-3 rounded-xl font-semibold transition flex justify-center items-center gap-2">
+                        <i class="fa-solid fa-stopwatch"></i> Cargar 30s al Timer
+                    </button>
+                    <p class="text-xs text-center text-slate-500 mt-3"><i class="fa-solid fa-bed text-slate-600 mr-1"></i>Descansa 1 min entre series.</p>
+                </div>
+
+                <!-- Fase 2 -->
+                <div class="bg-slate-800 rounded-2xl p-5 shadow-lg border border-slate-700">
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="font-bold text-lg text-white">Fase 2: Total Corta</h3>
+                        <span class="bg-slate-700 text-xs px-2 py-1 rounded font-semibold text-slate-300">Semanas 3-4</span>
+                    </div>
+                    <p class="text-sm text-slate-400 mb-3">Suspensión total sin apoyo. Alterna técnica: Series 1 y 3 <strong>pasivas</strong> (hombros a orejas), Series 2 y 4 <strong>activas</strong> (hombros hacia abajo).</p>
+                    <div class="flex gap-4 text-sm text-slate-300 mb-4">
+                        <div><i class="fa-solid fa-calendar-days text-emerald-500 mr-1"></i> 4-5 días/sem</div>
+                        <div><i class="fa-solid fa-rotate-right text-emerald-500 mr-1"></i> 4 series</div>
+                    </div>
+                    <button onclick="setTimerFromRoutine(15)" class="w-full bg-slate-700 hover:bg-slate-600 text-emerald-400 py-3 rounded-xl font-semibold transition flex justify-center items-center gap-2">
+                        <i class="fa-solid fa-stopwatch"></i> Cargar 15s al Timer
+                    </button>
+                    <p class="text-xs text-center text-slate-500 mt-3"><i class="fa-solid fa-bed text-slate-600 mr-1"></i>Descansa 1 min entre series.</p>
+                </div>
+
+                <!-- Fase 3 -->
+                <div class="bg-slate-800 rounded-2xl p-5 shadow-lg border border-slate-700 border-l-4 border-l-emerald-500">
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="font-bold text-lg text-white">Fase 3: Volumen</h3>
+                        <span class="bg-emerald-900 text-xs px-2 py-1 rounded font-semibold text-emerald-400">Semana 5+</span>
+                    </div>
+                    <p class="text-sm text-slate-400 mb-3">Acumula tiempo colgado en total. Intenta reducir gradualmente la cantidad de series que te toma llegar a la meta.</p>
+                    <div class="flex gap-4 text-sm text-slate-300 mb-4">
+                        <div><i class="fa-solid fa-calendar-days text-emerald-500 mr-1"></i> 5 días/sem</div>
+                        <div><i class="fa-solid fa-bullseye text-emerald-500 mr-1"></i> Acumular: 120s</div>
+                    </div>
+                    <button onclick="setTimerFromRoutine(120)" class="w-full bg-emerald-600/20 text-emerald-400 border border-emerald-600 hover:bg-emerald-600/40 py-3 rounded-xl font-semibold transition flex justify-center items-center gap-2">
+                        <i class="fa-solid fa-stopwatch"></i> Cargar 120s al Timer
+                    </button>
+                </div>
+
+                <!-- Tips / Técnica -->
+                <div class="bg-slate-900 rounded-2xl p-5 border border-slate-700 mt-6">
+                    <h3 class="font-bold text-md text-slate-300 mb-4"><i class="fa-solid fa-lightbulb text-amber-400 mr-2"></i>Técnica y Consejos</h3>
+                    <ul class="text-sm text-slate-400 space-y-3">
+                        <li class="flex items-start gap-2"><i class="fa-solid fa-hand text-emerald-600 mt-1"></i><span><strong class="text-white">Agarre:</strong> Palmas hacia adelante, rodea la barra con los pulgares para seguridad.</span></li>
+                        <li class="flex items-start gap-2"><i class="fa-solid fa-child-reaching text-emerald-600 mt-1"></i><span><strong class="text-white">Brazos:</strong> Completamente estirados, no flexiones los codos o fatigarás el bíceps.</span></li>
+                        <li class="flex items-start gap-2"><i class="fa-solid fa-lungs text-emerald-600 mt-1"></i><span><strong class="text-white">Respiración:</strong> Profunda y controlada desde el diafragma. ¡El error #1 es aguantar el aire!</span></li>
+                        <li class="flex items-start gap-2"><i class="fa-solid fa-person text-emerald-600 mt-1"></i><span><strong class="text-white">Postura:</strong> Piernas juntas y un poco adelantadas, glúteos contraídos para proteger la lumbar.</span></li>
+                    </ul>
+                </div>
+            </div>
         </section>
 
         <!-- VISTA: HISTORIAL -->
@@ -185,18 +253,22 @@
     </main>
 
     <!-- Barra de Navegación Inferior -->
-    <nav class="bg-slate-800 border-t border-slate-700 absolute bottom-0 w-full flex justify-around pb-safe">
-        <button onclick="switchTab('timer')" class="nav-btn flex-1 py-4 flex flex-col items-center text-emerald-400 transition" data-target="timer">
+    <nav class="bg-slate-800 border-t border-slate-700 absolute bottom-0 w-full flex justify-between px-2 pb-safe">
+        <button onclick="switchTab('timer')" class="nav-btn flex-1 py-3 flex flex-col items-center text-emerald-400 transition" data-target="timer">
             <i class="fa-solid fa-stopwatch text-xl mb-1"></i>
-            <span class="text-xs font-semibold">Temporizador</span>
+            <span class="text-[10px] sm:text-xs font-semibold">Timer</span>
         </button>
-        <button onclick="switchTab('history')" class="nav-btn flex-1 py-4 flex flex-col items-center text-slate-500 hover:text-slate-300 transition" data-target="history">
-            <i class="fa-solid fa-list text-xl mb-1"></i>
-            <span class="text-xs font-semibold">Historial</span>
+        <button onclick="switchTab('routine')" class="nav-btn flex-1 py-3 flex flex-col items-center text-slate-500 hover:text-slate-300 transition" data-target="routine">
+            <i class="fa-solid fa-list-check text-xl mb-1"></i>
+            <span class="text-[10px] sm:text-xs font-semibold">Rutina</span>
         </button>
-        <button onclick="switchTab('settings')" class="nav-btn flex-1 py-4 flex flex-col items-center text-slate-500 hover:text-slate-300 transition" data-target="settings">
+        <button onclick="switchTab('history')" class="nav-btn flex-1 py-3 flex flex-col items-center text-slate-500 hover:text-slate-300 transition" data-target="history">
+            <i class="fa-solid fa-chart-line text-xl mb-1"></i>
+            <span class="text-[10px] sm:text-xs font-semibold">Historial</span>
+        </button>
+        <button onclick="switchTab('settings')" class="nav-btn flex-1 py-3 flex flex-col items-center text-slate-500 hover:text-slate-300 transition" data-target="settings">
             <i class="fa-solid fa-gear text-xl mb-1"></i>
-            <span class="text-xs font-semibold">Ajustes</span>
+            <span class="text-[10px] sm:text-xs font-semibold">Ajustes</span>
         </button>
     </nav>
 
@@ -262,7 +334,7 @@
         let state = 'IDLE'; // IDLE, PREP, HANGING
         let startTime = 0;
         let timerInterval = null;
-        let targetMs = 60000;
+        let targetMs = 30000;
         let goalReached = false;
         
         // Elementos UI
@@ -273,6 +345,7 @@
         const inputTarget = document.getElementById('inputTarget');
         const progressCircle = document.getElementById('progressCircle');
         const saveMsg = document.getElementById('saveMsg');
+        const targetContainer = document.getElementById('targetContainer');
 
         function adjustTarget(val) {
             let current = parseInt(inputTarget.value) || 0;
@@ -391,6 +464,18 @@
 
         btnStart.addEventListener('click', startSequence);
         btnStop.addEventListener('click', stopSequence);
+
+        // --- RUTINA A TIMER ---
+        function setTimerFromRoutine(secs) {
+            inputTarget.value = secs;
+            switchTab('timer');
+            
+            // Pequeño efecto visual para indicar que se cargó
+            targetContainer.classList.add('bg-emerald-900/30', 'border-emerald-500');
+            setTimeout(() => {
+                targetContainer.classList.remove('bg-emerald-900/30', 'border-emerald-500');
+            }, 600);
+        }
 
         // --- SISTEMA DE DATOS (Historial) ---
         function getHistory() {
